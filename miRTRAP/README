@@ -1,0 +1,276 @@
+_Table_of_Contents_
+
+A. Preparation of the initial files.
+   I. Creation of the configuration file: config.txt.
+   II. Creation of the readsListFile: reads.txt.
+B. Running the program.
+   I. Method I: running the standalone script miRTRAP.pl
+   II. Method II: running the indivual scripts.
+       1.) printReadRegions.pl
+       2.) readRegionsToRNAFold.pl
+       3.) RNAfold
+       4.) tRNAscan-SE
+       5.) processReadRegions.pl
+       6.) evaluateReadRegionsWithGenes.pl
+C. Understanding the output files.
+   I. The hairpin file.
+   II. The products file.
+   III. The distinct reads file.
+
+A. Preparation of the individual files.
+
+The miRTRAP algorithm is implemented with a set of perl scripts that process various input files,
+and produce a set of output files. The input files consist of the configuration file, aligned reads,
+repeat information, tRNA predictions etc. The output files consist of tab-separated lists of loci and 
+associated products. Each input and output file will be discussed in turn, so let's begin with the 
+configuration file.
+
+I. Creation of a configuration file: config.txt
+
+The configuration file is a plain text file with key-value pairs seperated by equal signs "=". For
+clarity you can add whitespace before and after the equal sign. When an entry is not present in 
+the config file, the program uses the default values. Some entries are required for the program to 
+function, such as "readListFile" which is a file that contains the aligned read information. The advantage
+of having a configuration file that has a global list of parameters is that you can always refer back to
+this file as a self-contained list defining all the parameters used for a run of the program. Also, parameters
+in this file such as "filePrefix" define the names of the output files, so that distinct sets of output files 
+can be easily identified using this entry.
+
+configuration file example:
+
+filePrefix = readRegions
+readListFile = reads.txt
+genomeFile = genome.fasta
+repeatRegionsFile = repeats.txt
+totalLength = 150
+maxLength = 160
+maxCount = 5
+maxHitCount = 50
+minLength = 20
+minDist = 10
+minMajor = -44
+maxMajor = 22
+maxReverse = 0.05
+maxHitCount = 50
+minLocusCount = 5
+maxFivePrimeHet = 0.5
+minShift = 7
+minOverlap = 2
+bpDensityLimit = 0.6
+inHairpinBuffer = 3
+outHairpinBuffer = 3
+hairpinRange = 70
+RNAfold = RNAfold
+
+II. Creation of the "readsListFile"
+
+The file reads.txt that is the value for the "readsListFile" key is a list of gff files that contain 
+the information about the alignment of reads to the genome. This file consists of the name of the tissue 
+or sample that the reads were sequenced in, and the file name. The tissue/sample name can not contain 
+any spaces and must be written as one word, for example "earlyEmbryo" or "early_embryo" would be valid,
+but "early embryo" would not be valid. It is best to use the full path when naming the file, unless 
+you always work in the directory that contains these files:
+
+readsListFile example:
+
+egg             /home/dhendrix/data/Ciona/Solexa1/Blast/egg_reads.gff
+larva           /home/dhendrix/data/Ciona/Solexa2/Blast/larva_reads.gff
+earlyEmbryo     /home/dhendrix/data/Ciona/Solexa1/Blast/earlyEmbryo_reads.gff
+gastrula        /home/dhendrix/data/Ciona/Solexa2/Blast/gastrula_reads.gff
+lateEmbryo      /home/dhendrix/data/Ciona/Solexa1/Blast/lateEmbryo_reads.gff
+adult           /home/dhendrix/data/Ciona/Solexa1/Blast/adult_reads.gff
+
+
+B. Running miRTRAP:
+
+miRTRAP can be run by the standalone perl script miRTRAP.pl, or equivilantly, 
+each step can be run seperately. Running each step seperately can help troubleshoot problems.
+miRTRAP.pl is a perl script that simply calls other perl scripts, so no steps are lost by choosing 
+either method.
+
+I. METHOD I: Running miRTRAP as a standalone script:
+
+./miRTRAP.pl config.txt
+
+II. METHOD II: Running miRTRAP using the scripts for the individual steps:
+
+1.) First print the contiguous read regions using the script "printReadRegions.pl"
+
+Usage:
+
+printReadRegions.pl config.txt
+
+2.) Second convert the read regions to RNAfold input (fasta file)
+
+Usage:
+
+readRegionsToRNAFold.pl config.txt
+
+3.) Third Fold the putative regions.
+
+Usage:
+
+cat readRegions.fasta | RNAfold -noPS > readRegions.mfe 
+
+4.) Fourth, predict tRNAs from the list of hairpins.
+
+tRNAscan-SE -o readRegions.trna -q readRegions.fasta
+
+5.) Fifth, process these putative hairpins, and optionally filter out tRNA predictions.
+
+Usage:
+
+processReadRegions.pl config.txt
+
+6.) Sixth, evaluate the regions using the hairpin folds, product list, and gene models...print out the list of predicted miRs:
+
+Usage:
+
+Scripts/evaluateReadRegionsWithGenes.pl <config file> <gene models>
+
+where the gene models file is in gff form, annotating all exons and UTRs. Here is an example of the format, taken from flybas\
+e Release 4.3:
+
+[***GFF3 EXAMPLE START***]
+X       FlyBase gene    7153177 7156848 .       +       .       ID=FBgn0024250;Name=brk;Alias=FBtr0071048,FBan0009653,CG9653-PA,\
+CG9653,CG9653-RA,FBpp0071007;Dbxref=GB_protein:AAF46251.3,GB_protein:AAF46251.2;gbunit=AE003440;cyto_range=7B1-7B1;putative_orth\
+olog_of=FBgn0081927;
+X       FlyBase exon    7153177 7156848 .       +       .       ID=CG9653:1;Name=brk:1;Parent=FBtr0071048;
+X       FlyBase mRNA    7153177 7156848 .       +       .       ID=FBtr0071048;Name=brk-RA;Parent=FBgn0024250;Alias=CG9653-RA;
+X       FlyBase protein 7153709 7155820 .       +       .       ID=FBpp0071007;Name=brk-PA;Parent=FBtr0071048;Alias=CG9653-PA;Db\
+xref=GB_protein:AAF46251.3;
+X       FlyBase CDS     7153709 7155823 .       +       .       ID=CDS_CG9653:1_702;Name=brk-cds;Parent=FBtr0071048;
+X       FlyBase point_mutation  7153968 7153968 .       +       .       ID=brk[M68];Parent=FBgn0024250;
+X       FlyBase three_prime_UTR 7155824 7156848 .       +       .       ID=three_prime_UTR_CG9653:1_702;Name=brk-u3;Parent=FBtr0\
+071048;
+X       FlyBase gene    7159851 7168976 .       -       .       ID=FBgn0029943;Name=Atg5;Alias=FBan0001643,CG1643;gbunit=AE00344\
+0;cyto_range=7B1-7B1;putative_ortholog_of=FBgn0074100;
+X       FlyBase mRNA    7159851 7168976 .       -       .       ID=FBtr0071065;Name=Atg5-RA;Parent=FBgn0029943;Alias=CG1643-RA;
+X       FlyBase exon    7159851 7160486 .       -       .       ID=CG1643:6;Name=Atg5:6;Parent=FBtr0071065;
+X       FlyBase three_prime_UTR 7159851 7160367 .       -       .       ID=three_prime_UTR_CG1643:6_679;Name=Atg5-u3;Parent=FBtr\
+0071065;
+X       FlyBase CDS     7160368 7160486 .       -       .       ID=CDS_CG1643:6_679;Name=Atg5-cds;Parent=FBtr0071065;
+X       FlyBase protein 7160371 7168908 .       -       .       ID=FBpp0071023;Name=Atg5-PA;Parent=FBtr0071065;Alias=CG1643-PA;D\
+bxref=GB_protein:AAF46252.2;
+X       FlyBase transposable_element_insertion_site     7164246 7164246 .       -       .       ID=FBti0042814;Name=P{XP}Atg5[d0\
+4577];associated_with=FBgn0029941,FBal0162104,FBgn0029943;derived_cyto_location=7B1;
+X       FlyBase CDS     7167603 7167708 .       -       .       ID=CDS_CG1643:5_679;Name=Atg5-cds;Parent=FBtr0071065;
+X       FlyBase exon    7167603 7167708 .       -       .       ID=CG1643:5;Name=Atg5:5;Parent=FBtr0071065;
+X       FlyBase CDS     7167793 7168018 .       -       .       ID=CDS_CG1643:4_679;Name=Atg5-cds;Parent=FBtr0071065;
+X       FlyBase exon    7167793 7168018 .       -       .       ID=CG1643:4;Name=Atg5:4;Parent=FBtr0071065;
+X       FlyBase CDS     7168394 7168499 .       -       .       ID=CDS_CG1643:3_679;Name=Atg5-cds;Parent=FBtr0071065;
+X       FlyBase exon    7168394 7168499 .       -       .       ID=CG1643:3;Name=Atg5:3;Parent=FBtr0071065;
+[***GFF3 EXAMPLE STOP***]
+
+This script should output a file "predicted_positives.txt" of the loci that pass all the tests of miRTRAP.
+
+7.) Optionally, you can convert the predicted positive to a set of files for easier analysis. This can be done with:
+
+processMirRegions.pl predicted_positives.txt readList.txt
+
+where readList.txt is the list of aligned reads (defined above) and predicted_positives.txt is part of the output from step 6.
+
+C. Understanding the output files.
+
+I. The hairpin file.
+
+The hairpin file is a tab-delimited file containing one line for each
+locus (all loci, not just the miRs) giving the fold from RNA-Seq, as
+well as a number of values that are used to determine if a locus is a
+miR. The colums of the file are:
+
+#tag - the ID of the locus
+chrom - the reference sequence
+start - the start position of the locus/read region
+stop - the stop position
+strand - the strand of the locus ( the strand to which the reads map)
+leftCenter - the position, relative to the beginning of the locus, of the base pair left of the loop of the longest hairpin.
+rightCenter - the position, relative to the beginning of the locus, of the base pair right of the loop of the longest hairpin.
+totalReads - the total number of reads mapping to the locus
+mfe - the minimum free enery of the fold
+sequence - the sequence of the locus
+fold - the fold of the locus from RNA-Seq, in parentheses notation.
+aapd - the average antisense product displacement. The average shift between sense and antisense products.
+tapd - the total antisense product displacement.
+urf - the unique read fraction. The fraction of reads mapping to the locus that do not map elsewhere in the genome.
+ahc - the average hit count of the miR products ( average number of hits to the genome for reads that overlap the miR products)
+afh - average five-prime heterogeneity of the products
+valid - pbd. the name "valid" is depricated. This column holds the average basepair density of the miR products.
+sameShifted - the maximum offset of reads on the same arm. 
+bothShifted - the maximum offset of reads on opposite arms.
+
+II. The products file. 
+
+This file is a tab-delimited file that contains one line per product
+associated with a locus. A "product" is a stack of reads aligning to a
+locus. For example, miR and a miR* are two examples of products
+associated with a pri-miR hairpin. As with the hairpin file, this
+contains a line for every product within every locus, not just the
+positive miRs. These values are used to determine if a locus is a
+putative miR or not. The columns are as follows:
+
+#tag - the ID of the locus
+side type- the arm of the hairpin, 5' or 3' or loop. Also can be "out" for being outside the main hairpin. or "split" for spanning a hairpin junction.
+type - the type of the product. miR, moR, loop etc.
+total reads - the total number of reads.
+total most abundant - the total number of reads associated with the most abundant product.
+start - the start position of the product, relative to the beginning of the haipin locus.
+stop - the stop position of the product.
+sequence - the sequence of the product.
+tissue1 - the name given to the first tissue/cell type used.
+tissue2
+...
+tissueN - the last tissue/cell type name
+
+III. The distinct reads file.
+
+This file is a very large tab-delimited file that contains one line
+per distinct read associated with a locus. A "distinct read" is a
+unique set of start/stop positions to which reads align. The distinct
+reads are then combined to form products. As with the hairpin file and
+product file, this file contains one line per every distinct read, not
+just for the positive miRs, and the contents of this file are used to
+determin if a locus is a putative miR or not. The columns are as
+follows:
+
+#tag - the ID of the locus
+start - the genomic start position of the distinct read
+stop - the genomic stop position of the distinct read
+total reads - the total number of reads mapping to this distinct read
+offsetStart - the position relative to the last 5' basepair of the hairpin (the last basepair to the left of the loop of the longest hairpin)
+relative Start - the position relative to the start of the locus.
+tissue1 - the name given to the first tissue/cell type used.
+tissue2
+...
+tissueN - the last tissue/cell type name
+
+
+INSTALLATION
+
+To install this module, download and unzip the file miRTRAP.tar.gz and navigate to the unzipped folder.
+To do this, type:
+
+   gunzip miRTRAP.tar.gz
+   tar xvf miRTRAP.tar
+   cd miRTRAP/
+
+Type the following:
+
+   perl Makefile.PL
+   make
+   make test
+   make install
+
+DEPENDENCIES
+
+This module has no dependencies and is completely "stand alone" in terms of
+other perl modules that are needed. However, there are other software needed
+as optional steps such as tRNAscan-SE, mentioned above.
+
+COPYRIGHT AND LICENCE
+
+Copyright (C) 2010 by David Hendrix 'davidhendrix@berkeley.edu' and 'davehendrix@gmail.com'
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself, either Perl version 5.10.0 or,
+at your option, any later version of Perl 5 you may have available.
