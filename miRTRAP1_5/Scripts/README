@@ -1,0 +1,32 @@
+
+
+commands:
+
+USAGE:
+printReadRegions.pl -S <SizesFile> -b <BamListFile> -o <outputPrefix> [-R <Repeat regions file>]
+ 	-S SizesFile   chrom.sizes file containing the size of each chromosome.
+	-b bamListFile 		  file containing a list of sample names and bamfile locations
+	-R RepeatRegionsFile File containing a list of repeat regions. (this file is optional)
+	-o outputPrefix	    prefix for output files;
+	-M MaxLength	    The maximum length for each read region reported in the read regions file
+
+USAGE:
+processReadRegions.pl -S <SizesFile> -b <BamListFile> -g <genome directory> -o <outputPrefix>
+	-S	SizesFile	chrom.sizes file containing the size of each chromosome.
+	-b	bamListFile	file containing a list of sample names and bamfile locations
+	-g	genomeDir	Directory containing chromosomes in sperate fasta files
+	-o	outputPrefix	prefix for output files;
+	-l	lengthMin	minimum length for the arms of the hairpin
+	-t	totalLength	maximum length of the entire hairpin
+	-d	distanceMin	distance within which a read can still be associated with a product
+	-f	fivePrimeHetMax	Maximum 5` hererogeneity
+	-c	countMinLocus	maximum number of producs reads neccessary to be a real product (use total of values returned from addNHTags.pl)
+	-r	reverseMax	maximum allowed fraction of total antisense product reads to total (sense + antisense) product reads
+	-s	shiftMin	minimum shift of products
+	-h	hairpinShortLength	length of short arms allowed in the middle of hammer head loops
+	-O	OverlapMin	min amount of product overlap needed for a same shifted and both shifted value to be recorded
+	-I	InHairpinBuffer	amount 5p products are allowed to cross into the loop without being considered a loop product
+	-O	OutHairpinBuffer	amount 3p products are allowed to cross into the loop without being considered a loop product
+	-R	RangeOfHairpint	Range of hairpin arms.  Outside this range are out products.
+	-M	MaxLength	The maximum length for each read region reported in the read regions file
+
