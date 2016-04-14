@@ -27,9 +27,14 @@ GetOptions ("MaxLength=i" => \$parameters->{MaxLength},
 	    "outputPrefix=s" => \$parameters->{outputPrefix},
 	    "bamListFile=s" => \$parameters->{bamListFile},
 	    "RepeatRegions=s" => \$parameters->{RepeatRegionsFile},
-	    "SizesFile=s" => \$parameters->{SizesFile}
+	    "SizesFile=s" => \$parameters->{SizesFile},
+	    "LoadFromConfigFile=s" => \$parameters->{LoadFromConfigFile}
     );
 
+unless ($parameters->{LoadFromConfigFile} eq "") {
+    my $configFile = $parameters->{LoadFromConfigFile};
+    miRTRAP1_6::readConfigFile($configFile,$parameters);
+}
 miRTRAP1_6::createOutputFileParameters($parameters);
 
 my $bamListFile = $parameters->{bamListFile} or die "FAIL: Bam List file not loaded (not found in parameters).\n";
